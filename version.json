@@ -1,0 +1,13 @@
+{
+  "version": "1.0.1",
+  "changelog": "Улучшен парсинг FunPay и добавлены новые темы",
+  "files": [
+    "funpay_giphy.py",
+    "downloader.py",
+    "sc_actions.py",
+    "web/index.html",
+    "web/style.css",
+    "web/app.js",
+    "web/widget.html"
+  ]
+}

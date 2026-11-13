@@ -1,0 +1,791 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <title>SoundCloud Launcher</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<div class="wallpaper-layer" id="wallpaper-layer"></div>
+<div class="snow-layer" id="snow-layer"></div>
+<div class="ambient-light" id="ambient-light"></div>
+<div class="toast" id="toast"></div>
+
+<!-- ВСПЛЫВАЮЩЕЕ ПРОМО МАГАЗИНА FUNPAY -->
+<div class="funpay-promo-card" id="funpay-promo-card">
+    <button type="button" class="funpay-promo-close" onclick="closeFunpayPromo()" title="Закрыть">✕</button>
+    <div class="funpay-promo-badge">✦ Предложение магазина</div>
+    <div class="funpay-promo-text" id="funpay-promo-text">
+        Давно хотели поиграть в «Alan Wake 2»? Тогда вам в наш магазин!
+    </div>
+    <div class="funpay-promo-footer">
+        <span class="funpay-promo-price" id="funpay-promo-price">от 40 ₽</span>
+        <button type="button" class="funpay-promo-btn" id="funpay-promo-btn">Перейти в магазин →</button>
+    </div>
+</div>
+
+<!-- МОДАЛЬНОЕ ОКНО ПОИСКА GIF ЧЕРЕЗ GIPHY -->
+<div class="lyrics-modal" id="giphy-modal" onclick="if(event.target===this) closeGiphyModal()">
+    <div class="lyrics-card" style="max-width:540px; max-height:82vh;">
+        <div class="lyrics-head">
+            <span id="giphy-modal-title">Поиск GIF на Giphy</span>
+            <button type="button" class="icon-square-btn" onclick="closeGiphyModal()">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M18 6L6 18M6 6l12 12"/></svg>
+            </button>
+        </div>
+        <div style="padding:12px 14px; display:flex; flex-direction:column; gap:10px; overflow:hidden; flex:1;">
+            <div style="display:flex; gap:8px;">
+                <input type="text" class="modal-input" id="giphy-search-input" placeholder="Введи запрос (напр. anime rain, cyberpunk, phonk, cat)..." onkeydown="if(event.key==='Enter') runGiphySearch()">
+                <button type="button" class="primary-btn" onclick="runGiphySearch()">Найти</button>
+            </div>
+            <div style="display:flex; gap:6px; flex-wrap:wrap;">
+                <button type="button" class="btn" style="padding:4px 9px; font-size:11px;" onclick="quickGiphyTag('anime aesthetic')">Anime</button>
+                <button type="button" class="btn" style="padding:4px 9px; font-size:11px;" onclick="quickGiphyTag('cyberpunk neon')">Cyberpunk</button>
+                <button type="button" class="btn" style="padding:4px 9px; font-size:11px;" onclick="quickGiphyTag('phonk drift')">Phonk</button>
+                <button type="button" class="btn" style="padding:4px 9px; font-size:11px;" onclick="quickGiphyTag('dark aesthetic')">Dark</button>
+                <button type="button" class="btn" style="padding:4px 9px; font-size:11px;" onclick="quickGiphyTag('tokyo ghoul')">Tokyo Ghoul</button>
+            </div>
+            <div class="giphy-grid" id="giphy-results-grid">
+                <div class="status-msg" style="grid-column:1/-1;">Введите запрос для поиска GIF</div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- СТАРТОВОЕ ОКНО ПРИ ПЕРВОМ ЗАПУСКЕ -->
+<div class="welcome-overlay" id="welcome-overlay">
+    <div class="welcome-card">
+        <div class="welcome-logo">
+            <svg width="28" height="28" viewBox="0 0 24 24" fill="currentColor"><path d="M11.56 8.87V17h8.76c1.85 0 3.35-1.67 3.35-3.72 0-1.92-1.32-3.5-3.01-3.7-.35-2.66-2.43-4.73-4.96-4.73-1.8 0-3.39 1.03-4.14 2.57v1.45zm-2.31 1.44v6.69h1.15V9.51c-.4.21-.78.48-1.15.8zm-2.31 1.98v4.71h1.15v-5.15c-.4.11-.78.26-1.15.44zm-2.31.68v4.03h1.15v-4.16c-.4 0-.78.05-1.15.13zm-2.31 1.15v2.88h1.15v-3.04c-.42.02-.8.08-1.15.16z"/></svg>
+        </div>
+        <h2>SoundCloud Launcher</h2>
+        <p>Войди в свой аккаунт SoundCloud (чтобы работали лайки и создание плейлистов) или просто введи никнейм для прослушивания.</p>
+        <button class="welcome-btn" style="margin-bottom:14px;" onclick="pywebview.api.open_sc_auth_window()">Войти через SoundCloud</button>
+        <div style="font-size:11.5px; color:var(--text-dim); margin-bottom:10px;">или без входа (только прослушивание):</div>
+        <div style="display:flex; gap:8px;">
+            <input type="text" class="welcome-input" id="welcome-username" style="margin-bottom:0;" placeholder="Никнейм (напр. fatalhave)" onkeydown="if(event.key==='Enter') submitWelcome()">
+            <button class="btn" id="welcome-btn" style="white-space:nowrap;" onclick="submitWelcome()">Далее →</button>
+        </div>
+    </div>
+</div>
+
+<!-- SPOTIFY-ЭКРАН ТЕКСТОВ ПЕСЕН -->
+<div class="spotify-lyrics-overlay" id="lyrics-modal">
+    <div class="spotify-lyrics-bg" id="lyrics-bg-blur"></div>
+    <div class="spotify-lyrics-header">
+        <div class="spotify-lyrics-track">
+            <img id="lyrics-cover" src="" alt="">
+            <div>
+                <div class="spotify-lyrics-title" id="lyrics-title">Текст песни</div>
+                <div class="spotify-lyrics-artist" id="lyrics-artist">SoundCloud</div>
+            </div>
+        </div>
+        <button class="icon-square-btn" onclick="toggleLyrics()" title="Свернуть текст">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><polyline points="6 9 12 15 18 9"/></svg>
+        </button>
+    </div>
+    <div class="spotify-lyrics-scroll" id="lyrics-body">
+        <div class="lyrics-placeholder">Загрузка текста...</div>
+    </div>
+</div>
+
+<!-- МОДАЛЬНОЕ ОКНО СОЗДАНИЯ ПЛЕЙЛИСТА -->
+<div class="lyrics-modal" id="create-pl-modal" onclick="if(event.target===this) closeCreatePlaylistModal()">
+    <div class="lyrics-card" style="max-height:82vh;">
+        <div class="lyrics-head">
+            <span>Создать плейлист в SoundCloud</span>
+            <button class="icon-square-btn" onclick="closeCreatePlaylistModal()">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M18 6L6 18M6 6l12 12"/></svg>
+            </button>
+        </div>
+        <div style="padding:14px 16px; display:flex; flex-direction:column; gap:10px; overflow:hidden;">
+            <input type="text" class="modal-input" id="new-pl-title" placeholder="Название плейлиста...">
+            <label style="display:flex; align-items:center; gap:8px; font-size:12.5px; color:var(--text-dim); cursor:pointer;">
+                <input type="checkbox" id="new-pl-public" checked style="accent-color:var(--accent);"> Публичный плейлист (виден всем)
+            </label>
+            <div style="font-size:12px; color:var(--text-dim);">Выбери треки из лайков для добавления:</div>
+            <div class="modal-track-picker" id="new-pl-picker"></div>
+            <button class="primary-btn" id="create-pl-submit" onclick="submitCreatePlaylist()">Создать и сохранить в SC</button>
+        </div>
+    </div>
+</div>
+
+<!-- МОДАЛЬНОЕ ОКНО ДОБАВЛЕНИЯ ТРЕКА В ПЛЕЙЛИСТ -->
+<div class="lyrics-modal" id="add-to-pl-modal" onclick="if(event.target===this) closeAddToPlaylistModal()">
+    <div class="lyrics-card" style="max-width:380px;">
+        <div class="lyrics-head">
+            <span>Добавить в плейлист</span>
+            <button class="icon-square-btn" onclick="closeAddToPlaylistModal()">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M18 6L6 18M6 6l12 12"/></svg>
+            </button>
+        </div>
+        <div style="padding:12px 16px; display:flex; flex-direction:column; gap:8px; overflow-y:auto;" id="add-to-pl-list"></div>
+    </div>
+</div>
+
+<!-- ВЕРХНЯЯ ПАНЕЛЬ НАВИГАЦИИ -->
+<div class="header">
+    <div class="nav-tabs">
+        <button class="tab-btn active" onclick="switchTab('likes', this)">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>
+            <span>Лайки</span>
+        </button>
+        <button class="tab-btn" onclick="switchTab('playlists', this)">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="3"/></svg>
+            <span>Плейлисты</span>
+        </button>
+        <button class="tab-btn" onclick="switchTab('feed', this)">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg>
+            <span>Лента</span>
+        </button>
+        <button class="tab-btn" onclick="switchTab('offline', this)">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+            <span>MP3</span>
+        </button>
+        <button class="tab-btn" onclick="switchTab('profile', this)">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+            <span>Профиль</span>
+        </button>
+        <button class="tab-btn" onclick="switchTab('faq', this)" title="Часто задаваемые вопросы и инструкции">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+            <span>FAQ</span>
+        </button>
+        <button class="tab-btn" onclick="switchTab('settings', this)" title="Настройки, эквалайзер и Zapret">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+        </button>
+    </div>
+
+    <div class="controls-top">
+        <button class="icon-square-btn" onclick="pywebview.api.toggle_widget()" title="Мини-плеер (Alt+M)">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="3" width="20" height="14" rx="2"/><rect x="12" y="10" width="8" height="5" rx="1" fill="currentColor"/></svg>
+        </button>
+        <button class="icon-square-btn" onclick="shufflePlay()" title="Случайный трек">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="16 3 21 3 21 8"/><line x1="4" y1="20" x2="21" y2="3"/><polyline points="21 16 21 21 16 21"/><line x1="15" y1="15" x2="21" y2="21"/><line x1="4" y1="4" x2="9" y2="9"/></svg>
+        </button>
+        <button class="icon-square-btn" onclick="triggerRefresh()" title="Обновить треки и код">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg>
+        </button>
+        <button class="icon-square-btn" onclick="restartWithTrack()" title="Перезапустить лаунчер (трек продолжит играть)">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12a9 9 0 1 1-9-9c2.52 0 4.93 1 6.74 2.74L21 8"/><polyline points="21 3 21 8 16 8"/></svg>
+        </button>
+        <button class="icon-square-btn quit-full-btn" onclick="quitAppCompletely()" title="Закрыть лаунчер полностью">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M18.36 6.64a9 9 0 1 1-12.73 0"/><line x1="12" y1="2" x2="12" y2="12"/></svg>
+        </button>
+    </div>
+</div>
+
+<!-- 1. ЛАЙКИ -->
+<div class="view-section active" id="tab-likes">
+    <div class="search-wrap">
+        <div class="search-box">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+            <input type="text" class="search-input" id="search-likes" placeholder="Фильтр по лайкам..." oninput="renderLikes()">
+        </div>
+        <span class="count-pill" id="likes-count-pill">0</span>
+    </div>
+    <div class="track-list" id="likes-list">
+        <div class="status-msg" id="likes-status">Загрузка треков...</div>
+    </div>
+</div>
+
+<!-- 2. ПЛЕЙЛИСТЫ -->
+<div class="view-section" id="tab-playlists">
+    <div class="search-wrap" id="pl-top-bar" style="justify-content:space-between; align-items:center;">
+        <span style="font-size:13px; color:var(--text-dim); font-weight:600;">Мои плейлисты SoundCloud</span>
+        <button class="primary-btn" style="padding:7px 13px; font-size:12.5px;" onclick="openCreatePlaylistModal()">+ Создать плейлист</button>
+    </div>
+    <div class="search-wrap" id="pl-back-bar" style="display:none; align-items:center;">
+        <button class="btn" onclick="closePlaylistView()">← Все плейлисты</button>
+        <span id="pl-current-name" style="font-weight:600; font-size:13.5px; margin-left:6px;"></span>
+    </div>
+    <div class="track-list" id="playlists-list">
+        <div class="status-msg">Загрузка плейлистов...</div>
+    </div>
+</div>
+
+<!-- 3. ЛЕНТА И ПОИСК -->
+<div class="view-section" id="tab-feed">
+    <div class="search-wrap">
+        <div class="search-box">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+            <input type="text" class="search-input" id="search-feed" placeholder="Поиск трека, артиста или ремикса в SoundCloud..." onkeydown="if(event.key==='Enter') loadFeed(false)">
+        </div>
+        <button class="btn" onclick="loadFeed(false)">Найти</button>
+    </div>
+    <div class="track-list" id="feed-list">
+        <div class="status-msg">Загрузка рекомендаций и ленты...</div>
+    </div>
+</div>
+
+<!-- 4. СКАЧАННЫЕ MP3 -->
+<div class="view-section" id="tab-offline">
+    <div class="search-wrap">
+        <div class="search-box">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+            <input type="text" class="search-input" id="search-offline" placeholder="Поиск по скачанным MP3..." oninput="renderOffline()">
+        </div>
+        <button class="btn" onclick="pywebview.api.open_downloads_folder()">Папка</button>
+    </div>
+    <div class="track-list" id="offline-list">
+        <div class="status-msg">Нет скачанных треков</div>
+    </div>
+</div>
+
+<!-- 5. ПРОФИЛЬ (ПРОСМОТР И НАСТРОЙКА) -->
+<div class="view-section" id="tab-profile">
+    <div class="profile-mode-bar">
+        <div class="segmented-control">
+            <button type="button" class="seg-btn active" id="prof-mode-view-btn" onclick="setProfileMode('view')">
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+                <span>Просмотр профиля</span>
+            </button>
+            <button type="button" class="seg-btn" id="prof-mode-edit-btn" onclick="setProfileMode('edit')">
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+                <span>Настройка профиля</span>
+            </button>
+        </div>
+
+        <button type="button" class="dev-premium-btn" onclick="openDevProfile()">
+            <span class="dev-crown">✦</span>
+            <span>Профиль разработчика</span>
+        </button>
+    </div>
+
+    <div class="profile-scroll">
+        <div class="tg-profile-hero anim-wave" id="prof-banner-view">
+            <div class="tg-hero-overlay" id="prof-banner-img"></div>
+            <div class="tg-hero-particles" id="prof-hero-particles"></div>
+
+            <div class="tg-hero-actions">
+                <button class="tg-circle-btn" onclick="pywebview.api.open_sc_auth_window()" title="Войти в аккаунт SoundCloud">
+                    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4"/><polyline points="10 17 15 12 10 7"/><line x1="15" y1="12" x2="3" y2="12"/></svg>
+                </button>
+            </div>
+
+            <div class="tg-avatar-stage" id="tg-avatar-stage">
+                <div class="tg-orbit-layer" id="tg-orbit-layer"></div>
+                <img class="tg-center-avatar ring-subtle" id="prof-avatar-view" src="" alt="">
+            </div>
+
+            <div class="tg-hero-name-row">
+                <span class="tg-hero-name" id="prof-name-view">SoundCloud User</span>
+                <span class="tg-name-badge" id="prof-badge-view"></span>
+            </div>
+            <div class="tg-hero-bio" id="prof-bio-view">SoundCloud Listener</div>
+
+            <div class="tg-profile-stats" id="prof-stats-row">
+                <div class="tg-stat-chip">
+                    <span class="tg-stat-num" id="prof-stat-likes">0</span>
+                    <span class="tg-stat-lbl">Лайков</span>
+                </div>
+                <div class="tg-stat-chip">
+                    <span class="tg-stat-num" id="prof-stat-playlists">0</span>
+                    <span class="tg-stat-lbl">Плейлистов</span>
+                </div>
+                <div class="tg-stat-chip">
+                    <span class="tg-stat-num" id="prof-stat-offline">0</span>
+                    <span class="tg-stat-lbl">MP3 Оффлайн</span>
+                </div>
+            </div>
+        </div>
+
+        <div id="profile-customization-panel" style="display:none;">
+            <div class="settings-section-title">Готовые шаблоны профиля</div>
+            <div class="profile-templates-grid">
+                <button type="button" class="tpl-card" onclick="applyProfileTemplate('minimal')">
+                    <span class="tpl-dot" style="background:linear-gradient(135deg,#1f1f28,#0d0d12);"></span>
+                    <span>Minimal Dark</span>
+                </button>
+                <button type="button" class="tpl-card" onclick="applyProfileTemplate('neon')">
+                    <span class="tpl-dot" style="background:linear-gradient(135deg,#ff5500,#9333ea);"></span>
+                    <span>Neon Wave</span>
+                </button>
+                <button type="button" class="tpl-card" onclick="applyProfileTemplate('cyber')">
+                    <span class="tpl-dot" style="background:linear-gradient(135deg,#ec4899,#1e1b4b);"></span>
+                    <span>Cyber Grid</span>
+                </button>
+                <button type="button" class="tpl-card" onclick="applyProfileTemplate('winter')">
+                    <span class="tpl-dot" style="background:linear-gradient(135deg,#0284c7,#0f172a);"></span>
+                    <span>Winter Frost</span>
+                </button>
+                <button type="button" class="tpl-card" onclick="applyProfileTemplate('crimson')">
+                    <span class="tpl-dot" style="background:linear-gradient(135deg,#dc2626,#18080c);"></span>
+                    <span>Blood Eclipse</span>
+                </button>
+                <button type="button" class="tpl-card" onclick="applyProfileTemplate('gold')">
+                    <span class="tpl-dot" style="background:linear-gradient(135deg,#eab308,#291d06);"></span>
+                    <span>Gold VIP</span>
+                </button>
+            </div>
+
+            <div class="profile-editor-box" id="profile-editor-box">
+                <div class="profile-grid-2">
+                    <div class="form-group">
+                        <label>Логин SoundCloud</label>
+                        <input type="text" id="inp-sc-user" placeholder="fatalhave">
+                    </div>
+                    <div class="form-group">
+                        <label>Отображаемый никнейм</label>
+                        <input type="text" id="inp-nick" oninput="livePreviewProfile()">
+                    </div>
+                    <div class="form-group">
+                        <label>Статус / Описание</label>
+                        <input type="text" id="inp-bio" oninput="livePreviewProfile()">
+                    </div>
+                    <div class="form-group">
+                        <label>Значок рядом с ником</label>
+                        <select id="inp-name-badge" onchange="livePreviewProfile()">
+                            <option value="">Без значка</option>
+                            <option value="⚡">⚡ Молния</option>
+                            <option value="👑">👑 Корона</option>
+                            <option value="🔥">🔥 Огонь</option>
+                            <option value="❄️">❄️ Снежинка</option>
+                            <option value="💀">💀 Череп</option>
+                            <option value="🎧">🎧 Наушники</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label>Фон профиля (Анимация / Статика)</label>
+                        <select id="inp-banner-anim" onchange="livePreviewProfile()">
+                            <option value="wave">Неоновая волна (Аним.)</option>
+                            <option value="aurora">Северное сияние (Аним.)</option>
+                            <option value="newyear">Зимний снегопад (Аним.)</option>
+                            <option value="crimson">Багровый пульс (Аним.)</option>
+                            <option value="gold">Золотой градиент (Аним.)</option>
+                            <option value="grid">Кибер-сетка (Статика)</option>
+                            <option value="solid_dark">Строгий тёмный (Статика)</option>
+                            <option value="none">Только своя картинка / GIF</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label>Предметы вокруг аватарки</label>
+                        <select id="inp-orbit-mode" onchange="livePreviewProfile()">
+                            <option value="none">Выкл (чистая аватарка)</option>
+                            <option value="music">Музыкальные иконки</option>
+                            <option value="stars">Звёзды и искры</option>
+                            <option value="snow">Снежинки</option>
+                            <option value="hearts">Сердечки</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label>Рамка аватарки</label>
+                        <select id="inp-avatar-ring" onchange="livePreviewProfile()">
+                            <option value="none">Без рамки</option>
+                            <option value="subtle">Тонкая белая</option>
+                            <option value="glow">Неоновое свечение</option>
+                            <option value="rainbow">Переливающееся кольцо</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label>Аватарка (URL или GIF)</label>
+                        <div style="display:flex; gap:6px;">
+                            <input type="text" id="inp-avatar" placeholder="https://..." oninput="livePreviewProfile()">
+                            <button type="button" class="btn" style="padding:0 10px; white-space:nowrap;" onclick="openGiphyModal('avatar')" title="Найти GIF на Giphy">GIF</button>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="form-group" style="margin-bottom:10px;">
+                    <label>Свой фон профиля (картинка или GIF с Giphy)</label>
+                    <div style="display:flex; gap:6px;">
+                        <input type="text" id="inp-banner" placeholder="https://... или выбери через Giphy →" oninput="livePreviewProfile()">
+                        <button type="button" class="primary-btn" style="padding:0 12px; white-space:nowrap;" onclick="openGiphyModal('banner')">🔍 Найти GIF (Giphy)</button>
+                    </div>
+                </div>
+
+                <div style="display:flex; gap:8px;">
+                    <button type="button" class="primary-btn" style="flex:1;" onclick="saveProfileUI()">Сохранить и выйти в просмотр</button>
+                    <button type="button" class="btn" onclick="syncSCProfile()">Сбросить из SC</button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- 6. FAQ — ЧАСТО ЗАДАВАЕМЫЕ ВОПРОСЫ И ИНСТРУКЦИИ -->
+<div class="view-section" id="tab-faq">
+    <div class="profile-scroll">
+        <div class="faq-hero-banner">
+            <div>
+                <div class="faq-hero-title">Справка и инструкции SoundCloud Launcher</div>
+                <div class="faq-hero-sub">Нажми на любой вопрос ниже, чтобы открыть пошаговую инструкцию</div>
+            </div>
+            <button type="button" class="dev-premium-btn" onclick="openDevProfile()">
+                <span class="dev-crown">✦</span>
+                <span>Профиль разработчика</span>
+            </button>
+        </div>
+
+        <div class="faq-list">
+            <div class="faq-item open" onclick="toggleFaqItem(this)">
+                <div class="faq-q">
+                    <span>1. Как закрыть лаунчер полностью или свернуть в трей?</span>
+                    <span class="faq-arrow">▾</span>
+                </div>
+                <div class="faq-a">
+                    • Если нажать обычный <b>крестик окна (X)</b> в углу — лаунчер плавно свернётся в <b>системный трей</b> (рядом с часами Windows), а музыка продолжит играть в фоне.<br>
+                    • Чтобы вернуть окно, кликни по оранжевой иконке SoundCloud в трее.<br>
+                    • Чтобы <b>закрыть программу полностью</b> (вместе с обходом Zapret и музыкой), нажми красную кнопку питания в правом верхнем углу лаунчера или выбери «Закрыть полностью» в меню трея.
+                </div>
+            </div>
+
+            <div class="faq-item" onclick="toggleFaqItem(this)">
+                <div class="faq-q">
+                    <span>2. Как настроить Discord, чтобы все друзья видели, что я слушаю?</span>
+                    <span class="faq-arrow">▾</span>
+                </div>
+                <div class="faq-a">
+                    1. Убедись, что в настройках лаунчера включён тумблер <b>«Статус в Discord (Rich Presence)»</b>.<br>
+                    2. Открой сам <b>Discord → Настройки пользователя (шестерёнка) → Конфиденциальность активности</b>.<br>
+                    3. Включи пункт <b>«Делиться статусом активности»</b> (и проверь в разделе «Зарегистрированные игры», что отображение статуса разрешено). После этого друзья будут видеть трек, обложку и кнопку «Слушать в SoundCloud».
+                </div>
+            </div>
+
+            <div class="faq-item" onclick="toggleFaqItem(this)">
+                <div class="faq-q">
+                    <span>3. Что такое встроенный Zapret и когда его нужно отключать?</span>
+                    <span class="faq-arrow">▾</span>
+                </div>
+                <div class="faq-a">
+                    • <b>Включить обход</b> — используй, если у тебя <b>НЕ включен VPN или прокси</b>. Лаунчер сам подберёт рабочий конфиг <code>.bat</code>, и через него одновременно заработают и SoundCloud, и Discord (включая голосовые каналы).<br>
+                    • <b>Отключить обход</b> — нажимай, если ты сидишь через свой VPN или прокси, чтобы не было конфликта сетевых драйверов.<br>
+                    • 3 зелёные точки в настройках означают стабильное соединение и показывают реальный пинг до серверов SoundCloud.
+                </div>
+            </div>
+
+            <div class="faq-item" onclick="toggleFaqItem(this)">
+                <div class="faq-q">
+                    <span>4. Как пользоваться мини-плеером и горячими клавишами?</span>
+                    <span class="faq-arrow">▾</span>
+                </div>
+                <div class="faq-a">
+                    • Нажми комбинацию <b>Alt + M</b> в любой игре или браузере (или первую кнопку в правом верхнем углу), чтобы вызвать компактный мини-плеер поверх всех окон.<br>
+                    • Мини-плеер можно перетаскивать мышкой в любой угол экрана и перематывать трек кликом по полосе.<br>
+                    • В самом лаунчере работают клавиши: <b>Пробел</b> — Пауза/Старт, <b>Стрелка вправо/влево</b> — переключение треков.
+                </div>
+            </div>
+
+            <div class="faq-item" onclick="toggleFaqItem(this)">
+                <div class="faq-q">
+                    <span>5. Как поставить анимированную GIF на фон или аватарку профиля?</span>
+                    <span class="faq-arrow">▾</span>
+                </div>
+                <div class="faq-a">
+                    1. Перейди во вкладку <b>«Профиль»</b> и вверху переключи режим на <b>«Настройка профиля»</b>.<br>
+                    2. Нажми кнопку <b>«🔍 Найти GIF (Giphy)»</b> рядом с полем фона (или кнопку <b>«GIF»</b> рядом с аватаркой).<br>
+                    3. Введи любой запрос на английском или русском (например, <i>anime rain</i>, <i>cyberpunk</i>, <i>tokyo ghoul</i>), кликни по понравившейся гифке и нажми <b>«Сохранить и выйти в просмотр»</b>.
+                </div>
+            </div>
+
+            <div class="faq-item" onclick="toggleFaqItem(this)">
+                <div class="faq-q">
+                    <span>6. Чем отличаются режимы «Слабый ПК» и «SoundCloud MAX»?</span>
+                    <span class="faq-arrow">▾</span>
+                </div>
+                <div class="faq-a">
+                    • <b>Режим слабый ПК</b> — отключает ресурсоёмкое размытие фона (blur) и живой визуализатор, снижает нагрузку на процессор и видеокарту и подгружает треки порциями от 200 штук.<br>
+                    • <b>SoundCloud MAX</b> — включает полные визуальные эффекты, расширенный охват рекомендаций и позволяет выбрать размер прогрузки в Лайках и Ленте от 300 до 1200 треков за раз.
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- 7. НАСТРОЙКИ -->
+<div class="view-section" id="tab-settings">
+    <div class="profile-scroll">
+        <div class="settings-section-title">Встроенный обход блокировок (Zapret)</div>
+        <div class="settings-card" style="padding:12px 14px;">
+            <div class="zapret-status-header">
+                <div class="zapret-dots-group offline" id="zapret-dots-group">
+                    <span class="z-dot"></span>
+                    <span class="z-dot"></span>
+                    <span class="z-dot"></span>
+                </div>
+                <div style="flex:1;">
+                    <div class="setting-title" id="zapret-status-label">Проверка соединения...</div>
+                    <div class="setting-desc" id="zapret-ping-label">Статус обхода и задержка до SoundCloud</div>
+                </div>
+                <button type="button" class="btn" style="padding:6px 10px;" onclick="refreshZapretPing()" title="Обновить пинг">↻ Пинг</button>
+            </div>
+
+            <div class="zapret-mode-grid">
+                <button type="button" class="zapret-mode-card active" id="btn-zapret-on" onclick="setZapretMode(true)">
+                    <span class="z-mode-title">Включить обход</span>
+                    <span class="z-mode-hint">если у вас не включен впн / прокси</span>
+                </button>
+                <button type="button" class="zapret-mode-card" id="btn-zapret-off" onclick="setZapretMode(false)">
+                    <span class="z-mode-title">Отключить обход</span>
+                    <span class="z-mode-hint">если у вас включен впн / прокси</span>
+                </button>
+            </div>
+
+            <div class="setting-row" style="padding-bottom:2px;">
+                <div>
+                    <div class="setting-title">Конфиг (.bat профиль)</div>
+                    <div class="setting-desc">Автоподбор сам переберёт .bat и запомнит рабочий</div>
+                </div>
+                <div style="display:flex; align-items:center; gap:6px;">
+                    <select id="set-zapret-bat" onchange="onZapretBatChange()" style="padding:6px 8px; border-radius:8px; border:1px solid var(--border); background:var(--bg); color:var(--text); font-size:12px; max-width:145px;">
+                        <option value="auto">Автоподбор</option>
+                    </select>
+                    <button type="button" class="btn" style="padding:6px 9px;" onclick="recheckZapret()" title="Перепроверить все .bat">Перебор</button>
+                </div>
+            </div>
+        </div>
+
+        <div class="settings-section-title">Режим производительности и подгрузки</div>
+        <div class="settings-card" style="padding:12px 14px;">
+            <div class="perf-mode-grid">
+                <button type="button" class="perf-card" id="perf-btn-low" onclick="setPerfMode('low')">
+                    <div class="perf-card-head">
+                        <span>⚡ Режим слабый ПК</span>
+                    </div>
+                    <div class="perf-card-desc">Меньше нагрузка на ОЗУ и видеокарту. По умолчанию грузит от 200 треков за раз.</div>
+                </button>
+                <button type="button" class="perf-card active" id="perf-btn-max" onclick="setPerfMode('max')">
+                    <div class="perf-card-head">
+                        <span>🚀 SoundCloud MAX</span>
+                    </div>
+                    <div class="perf-card-desc">Ускоренная загрузка треков, расширенный охват ленты и выбор размера прогрузки.</div>
+                </button>
+            </div>
+
+            <div class="batch-limits-row" id="batch-limits-row">
+                <div class="batch-col">
+                    <label>Прогрузка в Лайках (треков):</label>
+                    <select id="set-likes-batch" onchange="updateBatchLimits()">
+                        <option value="200">200 треков</option>
+                        <option value="300">300 треков (Стандарт MAX)</option>
+                        <option value="500">500 треков</option>
+                        <option value="800">800 треков</option>
+                        <option value="1200">1200 треков</option>
+                    </select>
+                </div>
+                <div class="batch-col">
+                    <label>Прогрузка в Ленте (треков):</label>
+                    <select id="set-feed-batch" onchange="updateBatchLimits()">
+                        <option value="200">200 треков</option>
+                        <option value="300">300 треков (Стандарт MAX)</option>
+                        <option value="500">500 треков</option>
+                        <option value="800">800 треков</option>
+                    </select>
+                </div>
+            </div>
+        </div>
+
+        <div style="display:flex; justify-content:space-between; align-items:center; margin:4px 2px 7px;">
+            <div class="settings-section-title" style="margin:0;">Графический эквалайзер (6 полос)</div>
+            <div style="display:flex; align-items:center; gap:8px;">
+                <span style="font-size:11px; color:var(--text-dim);">Вкл/Выкл</span>
+                <input type="checkbox" class="toggle-switch" id="set-eq-enabled" checked onchange="toggleEqEnabled()">
+            </div>
+        </div>
+
+        <div class="settings-card" style="padding:12px 14px;" id="eq-card-box">
+            <div class="eq-presets-row">
+                <button type="button" class="eq-preset-btn eq-auto-btn" data-preset="auto" onclick="toggleAutoEq()">✨ Авто (по треку)</button>
+                <button type="button" class="eq-preset-btn" data-preset="flat" onclick="applyEqPreset('flat')">Плоский</button>
+                <button type="button" class="eq-preset-btn" data-preset="bass" onclick="applyEqPreset('bass')">Bass Boost</button>
+                <button type="button" class="eq-preset-btn" data-preset="phonk" onclick="applyEqPreset('phonk')">Phonk / Drift</button>
+                <button type="button" class="eq-preset-btn" data-preset="vocal" onclick="applyEqPreset('vocal')">Вокал / Поп</button>
+                <button type="button" class="eq-preset-btn" data-preset="rock" onclick="applyEqPreset('rock')">Рок / Метал</button>
+            </div>
+            <div id="eq-auto-status" style="font-size:11px; color:var(--accent); margin-bottom:10px; display:none;">Авто-режим: ожидание трека...</div>
+
+            <div class="eq-sliders-wrap" id="eq-sliders-wrap">
+                <div class="eq-band">
+                    <span class="eq-db" id="eq-val-0">0 dB</span>
+                    <div class="eq-track">
+                        <input type="range" class="eq-range" id="eq-band-0" min="-12" max="12" step="1" value="0" oninput="onEqSliderInput(0, this.value)">
+                    </div>
+                    <span class="eq-freq">60 Гц</span>
+                </div>
+                <div class="eq-band">
+                    <span class="eq-db" id="eq-val-1">0 dB</span>
+                    <div class="eq-track">
+                        <input type="range" class="eq-range" id="eq-band-1" min="-12" max="12" step="1" value="0" oninput="onEqSliderInput(1, this.value)">
+                    </div>
+                    <span class="eq-freq">230 Гц</span>
+                </div>
+                <div class="eq-band">
+                    <span class="eq-db" id="eq-val-2">0 dB</span>
+                    <div class="eq-track">
+                        <input type="range" class="eq-range" id="eq-band-2" min="-12" max="12" step="1" value="0" oninput="onEqSliderInput(2, this.value)">
+                    </div>
+                    <span class="eq-freq">910 Гц</span>
+                </div>
+                <div class="eq-band">
+                    <span class="eq-db" id="eq-val-3">0 dB</span>
+                    <div class="eq-track">
+                        <input type="range" class="eq-range" id="eq-band-3" min="-12" max="12" step="1" value="0" oninput="onEqSliderInput(3, this.value)">
+                    </div>
+                    <span class="eq-freq">3.6 кГц</span>
+                </div>
+                <div class="eq-band">
+                    <span class="eq-db" id="eq-val-4">0 dB</span>
+                    <div class="eq-track">
+                        <input type="range" class="eq-range" id="eq-band-4" min="-12" max="12" step="1" value="0" oninput="onEqSliderInput(4, this.value)">
+                    </div>
+                    <span class="eq-freq">8 кГц</span>
+                </div>
+                <div class="eq-band">
+                    <span class="eq-db" id="eq-val-5">0 dB</span>
+                    <div class="eq-track">
+                        <input type="range" class="eq-range" id="eq-band-5" min="-12" max="12" step="1" value="0" oninput="onEqSliderInput(5, this.value)">
+                    </div>
+                    <span class="eq-freq">14 кГц</span>
+                </div>
+            </div>
+        </div>
+
+        <div class="settings-section-title">Темы и фоны приложения</div>
+        <div class="theme-cards-grid">
+            <button type="button" class="theme-card" onclick="selectWallpaperPreset('pulsebeat', 'none')">
+                <span class="theme-preview" style="background:linear-gradient(135deg,#ff5500,#ec4899,#38bdf8);"></span>
+                <span>Pulse Beat (Бит)</span>
+            </button>
+            <button type="button" class="theme-card" onclick="selectWallpaperPreset('obsidian', 'none')">
+                <span class="theme-preview" style="background:linear-gradient(135deg,#0a0a0e,#1e1e2a);"></span>
+                <span>Обсидиан</span>
+            </button>
+            <button type="button" class="theme-card" onclick="selectWallpaperPreset('newyear', 'snow')">
+                <span class="theme-preview" style="background:linear-gradient(135deg,#09192f,#1d4ed8);"></span>
+                <span>Новый год</span>
+            </button>
+            <button type="button" class="theme-card" onclick="selectWallpaperPreset('cyberpunk', 'grid')">
+                <span class="theme-preview" style="background:linear-gradient(135deg,#180828,#ec4899);"></span>
+                <span>Киберпанк</span>
+            </button>
+            <button type="button" class="theme-card" onclick="selectWallpaperPreset('midnight', 'stars')">
+                <span class="theme-preview" style="background:linear-gradient(135deg,#050814,#0ea5e9);"></span>
+                <span>Звёздная ночь</span>
+            </button>
+            <button type="button" class="theme-card" onclick="selectWallpaperPreset('sakura', 'petals')">
+                <span class="theme-preview" style="background:linear-gradient(135deg,#1f0d18,#f43f5e);"></span>
+                <span>Сакура</span>
+            </button>
+        </div>
+
+        <div class="settings-card">
+            <div class="setting-row">
+                <div>
+                    <div class="setting-title">Свой фон (картинка или GIF по ссылке)</div>
+                    <div class="setting-desc">Оставь пустым, чтобы использовать выбранную тему</div>
+                </div>
+                <input type="text" id="set-custom-bg" placeholder="https://...gif/jpg" onchange="updateSettingsUI()" style="width:175px; padding:6px 9px; border-radius:8px; border:1px solid var(--border); background:var(--bg); color:var(--text); font-size:12px;">
+            </div>
+
+            <div class="setting-row">
+                <div>
+                    <div class="setting-title">Акцентный цвет</div>
+                    <div class="setting-desc">Цвет кнопок, полосы прогресса и подсветки</div>
+                </div>
+                <div style="display:flex; align-items:center; gap:7px;">
+                    <button type="button" class="color-dot" style="background:#ff5500" onclick="pickAccent('#ff5500')"></button>
+                    <button type="button" class="color-dot" style="background:#38bdf8" onclick="pickAccent('#38bdf8')"></button>
+                    <button type="button" class="color-dot" style="background:#8b5cf6" onclick="pickAccent('#8b5cf6')"></button>
+                    <button type="button" class="color-dot" style="background:#10b981" onclick="pickAccent('#10b981')"></button>
+                    <button type="button" class="color-dot" style="background:#f43f5e" onclick="pickAccent('#f43f5e')"></button>
+                    <input type="color" id="set-accent" value="#ff5500" onchange="updateSettingsUI()" style="width:26px; height:26px; border:none; background:none; cursor:pointer;">
+                </div>
+            </div>
+
+            <div class="setting-row">
+                <div>
+                    <div class="setting-title">Живой визуализатор</div>
+                    <div class="setting-desc">Плавные полосы частот над панелью плеера</div>
+                </div>
+                <input type="checkbox" class="toggle-switch" id="set-visualizer" checked onchange="updateSettingsUI()">
+            </div>
+
+            <div class="setting-row">
+                <div>
+                    <div class="setting-title">Компактный список треков</div>
+                    <div class="setting-desc">Больше треков на одном экране</div>
+                </div>
+                <input type="checkbox" class="toggle-switch" id="set-compact" onchange="updateSettingsUI()">
+            </div>
+
+            <div class="setting-row">
+                <div>
+                    <div class="setting-title">Непрозрачность мини-плеера</div>
+                    <div class="setting-desc">Фон плавающего виджета</div>
+                </div>
+                <input type="range" id="set-widget-opacity" min="0.6" max="1" step="0.02" value="0.94" oninput="updateSettingsUI()" style="width:90px; accent-color:var(--accent);">
+            </div>
+
+            <div class="setting-row">
+                <div>
+                    <div class="setting-title">Статус в Discord (Rich Presence)</div>
+                    <div class="setting-desc">Чтобы статус видели все друзья: в Discord включите «Конфиденциальность активности → Делиться статусом активности»</div>
+                </div>
+                <input type="checkbox" class="toggle-switch" id="set-discord" checked onchange="updateSettingsUI()">
+            </div>
+        </div>
+
+        <div style="display:flex; justify-content:center; padding:4px 0 12px;">
+            <button type="button" class="dev-premium-btn" onclick="openDevProfile()">
+                <span class="dev-crown">✦</span>
+                <span>Профиль разработчика</span>
+            </button>
+        </div>
+    </div>
+</div>
+
+<!-- НИЖНИЙ ПЛЕЕР -->
+<div class="player-dock">
+    <canvas id="visualizer" width="900" height="26"></canvas>
+    <div class="player-top">
+        <div class="now-playing-wrap">
+            <img class="dock-cover" id="dock-cover" src="">
+            <div class="now-playing-info">
+                <div class="now-playing-title" id="now-playing-title">Выберите трек</div>
+                <div class="now-playing-artist" id="now-playing-artist">SoundCloud Launcher</div>
+            </div>
+        </div>
+        <div class="player-buttons">
+            <button type="button" class="icon-btn" id="dock-like-btn" onclick="likeCurrentTrack()" title="Лайкнуть трек">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>
+            </button>
+            <button type="button" class="icon-btn" onclick="openAddToPlaylistForCurrent()" title="Добавить в плейлист">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+            </button>
+            <button type="button" class="icon-btn" id="lyrics-dock-btn" onclick="toggleLyrics()" title="Текст песни (Spotify режим)">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" y1="19" x2="12" y2="23"/></svg>
+            </button>
+            <button type="button" class="icon-btn" onclick="downloadCurrent()" title="Скачать MP3">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+            </button>
+            <button type="button" class="icon-btn" id="repeat-btn" onclick="toggleRepeat()" title="Повтор трека">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="17 1 21 5 17 9"/><path d="M3 11V9a4 4 0 0 1 4-4h14"/><polyline points="7 23 3 19 7 15"/><path d="M21 13v2a4 4 0 0 1-4 4H3"/></svg>
+            </button>
+            <button type="button" class="icon-btn" onclick="prevTrack()" title="Предыдущий">
+                <svg width="17" height="17" viewBox="0 0 24 24" fill="currentColor"><path d="M6 6h2v12H6zm3.5 6l8.5 6V6z"/></svg>
+            </button>
+            <button type="button" class="play-btn" id="play-pause-btn" onclick="togglePlay()">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg>
+            </button>
+            <button type="button" class="icon-btn" onclick="nextTrack()" title="Следующий">
+                <svg width="17" height="17" viewBox="0 0 24 24" fill="currentColor"><path d="M6 18l8.5-6L6 6v12zM16 6v12h2V6h-2z"/></svg>
+            </button>
+        </div>
+    </div>
+    <div class="progress-row">
+        <span id="time-cur">0:00</span>
+        <div class="progress-bar" id="progress-bar" onclick="seek(event)">
+            <div class="progress-fill" id="progress-fill"></div>
+        </div>
+        <span id="time-dur">0:00</span>
+        <div class="vol-wrap">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><path d="M15.54 8.46a5 5 0 0 1 0 7.07"/></svg>
+            <input type="range" id="volume" min="0" max="1" step="0.02" value="0.8" oninput="setVolume(this.value)">
+        </div>
+    </div>
+</div>
+
+<audio id="audio" crossorigin="anonymous" preload="auto"></audio>
+<script src="app.js"></script>
+</body>
+</html>
