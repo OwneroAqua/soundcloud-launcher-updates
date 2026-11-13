@@ -1,6 +1,6 @@
 {
-  "version": "1.0.1",
-  "changelog": "Улучшен парсинг FunPay и добавлены новые темы",
+  "version": "1.0.2",
+  "changelog": "Добавлено отображение версии в настройках (тест OTA)",
   "files": [
     "funpay_giphy.py",
     "downloader.py",
